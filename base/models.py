@@ -16,11 +16,11 @@ class Type(models.Model):
 
 class Length(models.Model):
     name = models.CharField(max_length=255)
-    length = models.PositiveSmallIntegerField()
+    length = models.PositiveSmallIntegerField() # hours
 
 
 class TimeRange(models.Model):
-    parent_id = models.ForeignKey("self")
+    parent_id = models.ForeignKey("self", null=True, blank=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
 
@@ -36,9 +36,9 @@ class Forecast(models.Model):
 
 
 class Accuracy(models.Model):
-    location = models.ForeignKey(Location, related_name="accuracies")
-    type = models.ForeignKey(Type, related_name="accuracies")
-    length = models.ForeignKey(Length, related_name="accuracies")
-    timerange = models.ForeignKey(TimeRange, related_name="accuracies")
+    location = models.ForeignKey(Location, related_name="accuracies", null=True, blank=True)
+    type = models.ForeignKey(Type, related_name="accuracies", null=True, blank=True)
+    length = models.ForeignKey(Length, related_name="accuracies", null=True, blank=True)
+    time_range = models.ForeignKey(TimeRange, related_name="accuracies")
 
     value = models.FloatField()
