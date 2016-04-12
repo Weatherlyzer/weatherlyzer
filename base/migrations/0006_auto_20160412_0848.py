@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations
+from django.db.models.aggregates import Avg, Max
 
 
 # copied from statistics.py
@@ -24,18 +25,12 @@ def update_statistics(apps, schema_editor):
         # copied form models.py
         forecasts = Forecast.objects.filter(type=stat.type)
 
-        sum = 0
-        max = 0
-        count = forecasts.count()
-        if count > 0:
-            max = forecasts.first().value
+        stat.avg = 0
+        stat.max = 0
+        if forecasts.exists():
+            stat.avg = forecasts.aggregate(Avg('value'))['value__avg']
+            stat.max = forecasts.aggregate(Max('value'))['value__max']
 
-        for forecast in forecasts.iterator():  # no cache
-            sum += forecast.value
-            if forecast.value > max: max = forecast.value
-
-        stat.max = max
-        stat.avg = sum / count
         stat.save()
 
 

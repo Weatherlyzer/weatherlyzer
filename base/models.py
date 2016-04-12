@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models.aggregates import Avg, Max
 
 
 class Location(models.Model):
@@ -52,16 +53,10 @@ class Statistics(models.Model):
     def update(self):
         forecasts = Forecast.objects.filter(type=self.type)
 
-        sum = 0
-        max = 0
-        count = forecasts.count()
-        if count > 0:
-            max = forecasts.first().value
+        self.avg = 0
+        self.max = 0
+        if forecasts.exists():
+            self.avg = forecasts.aggregate(Avg('value'))['value__avg']
+            self.max = forecasts.aggregate(Max('value'))['value__max']
 
-        for forecast in forecasts.iterator():  # no cache
-            sum += forecast.value
-            if forecast.value > max: max = forecast.value
-
-        self.max = max
-        self.avg = sum / count
         self.save()
