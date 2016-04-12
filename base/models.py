@@ -21,7 +21,7 @@ class Length(models.Model):
 
 
 class TimeRange(models.Model):
-    parent_id = models.ForeignKey("self", null=True, blank=True)
+    parent = models.ForeignKey("self", null=True, blank=True)
     start = models.DateTimeField()
     end = models.DateTimeField()
 

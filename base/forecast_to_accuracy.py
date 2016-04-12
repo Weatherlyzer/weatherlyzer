@@ -14,10 +14,9 @@ def get_accuracy(dist, dim):
 
     a = max - min
     b = avg - min
+    dist -= min
 
     while percents > 0.0001:
-        print "percents\tdist\ta\tb\taccuracy\tratio"
-        print percents, "\t", dist, "\t", a, "\t", b, "\t", accuracy, "\t", ratio
         if dist > b:
             accuracy -= percents
             dist -= b

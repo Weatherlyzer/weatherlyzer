@@ -85,7 +85,7 @@ def create_timerange(apps, schema_editor):
 
     # top most time range
     TimeRange.objects.create(
-        parent_id=None,
+        parent=None,
         start=make_aware(datetime(2000, 1, 1), get_current_timezone()),
         end=make_aware(datetime(2100, 1, 1), get_current_timezone()),
     )
