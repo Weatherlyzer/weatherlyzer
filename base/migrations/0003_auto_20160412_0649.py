@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 from datetime import datetime
 
+from django.utils.timezone import get_current_timezone, make_aware
+
+
 def create_locations(apps, schema_editor):
     Location = apps.get_model("base", "Location")
     Location.objects.create(
@@ -52,6 +55,10 @@ def create_types(apps, schema_editor):
 def create_lengths(apps, schema_editor):
     Length = apps.get_model("base", "Length")
     Length.objects.create(
+        name="Actual time",
+        length=0,
+    )
+    Length.objects.create(
         name="3 hours",
         length=3,
     )
@@ -79,8 +86,8 @@ def create_timerange(apps, schema_editor):
     # top most time range
     TimeRange.objects.create(
         parent_id=None,
-        start=datetime(2000, 1, 1),
-        end=datetime(2100, 1, 1),
+        start=make_aware(datetime(2000, 1, 1), get_current_timezone()),
+        end=make_aware(datetime(2100, 1, 1), get_current_timezone()),
     )
 
 
