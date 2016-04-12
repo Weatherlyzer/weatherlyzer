@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models.aggregates import Avg, Max
+from django.db.models.aggregates import Avg, Max, Min
 
 
 class Location(models.Model):
@@ -38,6 +38,9 @@ class Forecast(models.Model):
     def length(self):
         return int(round((self.forecasting - self.forecasted_on).total_seconds() / 3600))
 
+    def get_difference(self, other):
+        return abs(self.value - other.value)
+
 
 class Accuracy(models.Model):
     location = models.ForeignKey(Location, related_name="accuracies", null=True, blank=True)
@@ -50,11 +53,12 @@ class Accuracy(models.Model):
 
 class Statistics(models.Model):
     type = models.OneToOneField(Type)
+    min = models.FloatField(default=0)
     avg = models.FloatField(default=0)
     max = models.FloatField(default=0)
 
     @classmethod
-    def update(cls):
+    def update_all(cls):
         for type in Type.objects.all():
             stat = cls.objects.get_or_create(type=type)
             stat.update()
@@ -62,10 +66,15 @@ class Statistics(models.Model):
     def update(self):
         forecasts = Forecast.objects.filter(type=self.type)
 
+        self.min = 0
         self.avg = 0
         self.max = 0
         if forecasts.exists():
+            self.min = forecasts.aggregate(Min('value'))['value__min']
             self.avg = forecasts.aggregate(Avg('value'))['value__avg']
             self.max = forecasts.aggregate(Max('value'))['value__max']
 
         self.save()
+
+    def get_dimensions(self):
+        return self.min, self.avg, self.max
