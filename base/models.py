@@ -47,8 +47,8 @@ class Accuracy(models.Model):
 
 class Statistics(models.Model):
     type = models.OneToOneField(Type)
-    avg = models.FloatField()
-    max = models.FloatField()
+    avg = models.FloatField(default=0)
+    max = models.FloatField(default=0)
 
     def update(self):
         forecasts = Forecast.objects.filter(type=self.type)
