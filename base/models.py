@@ -35,6 +35,9 @@ class Forecast(models.Model):
 
     value = models.FloatField()
 
+    def length(self):
+        return int(round((self.forecasting - self.forecasted_on).total_seconds() / 3600))
+
 
 class Accuracy(models.Model):
     location = models.ForeignKey(Location, related_name="accuracies", null=True, blank=True)
@@ -49,6 +52,12 @@ class Statistics(models.Model):
     type = models.OneToOneField(Type)
     avg = models.FloatField(default=0)
     max = models.FloatField(default=0)
+
+    @classmethod
+    def update(cls):
+        for type in Type.objects.all():
+            stat = cls.objects.get_or_create(type=type)
+            stat.update()
 
     def update(self):
         forecasts = Forecast.objects.filter(type=self.type)
