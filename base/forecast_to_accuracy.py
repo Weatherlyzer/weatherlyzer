@@ -32,10 +32,16 @@ def get_accuracy(dist, dim):
 
 
 def forecast_to_accuracy(datetime, update=True):
+    existing_time_ranges = TimeRange.objects.filter(start=datetime, end=datetime)
+    if existing_time_ranges.exists():
+        existing_time_ranges.delete()
+
     forecasts = Forecast.objects.filter(forecasting=datetime)
 
     actual_values = forecasts.filter(forecasted_on=datetime)
     statistics = Statistics.objects.all()
+
+    accuracies = []
 
     time_range = TimeRange.get_time_range(datetime)
     for result in actual_values.all():
@@ -47,13 +53,15 @@ def forecast_to_accuracy(datetime, update=True):
             difference = result.get_difference(forecast)
             accuracy = get_accuracy(difference, stat.get_dimensions())
 
-            Accuracy.objects.create(
+            accuracies.append(Accuracy(
                 location=result.location,
                 type=result.type,
                 length=length,
                 time_range=time_range,
                 value=accuracy,
-            )
+            ))
+
+    Accuracy.objects.bulk_create(accuracies)
 
     if update:
         time_range.parent.update()

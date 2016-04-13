@@ -21,17 +21,15 @@ def accuracy(request, time_range_id, type_id=None):
     table = []
     table.append([])
     table[0].append('x')
-    lens = Length.objects.order_by('length')
+    lens = Length.objects.order_by('length').all()
     for l in lens:
         table[0].append(l.length)
 
     for l in Location.objects.all():
         row = []
         row.append(l.name)
-        i = 0
-        for a in Accuracy.objects.filter(time_range=time_range, length=lens[i], location=l, type=type).order_by('length__length'):
-            row.append(a.value * 100)
-            i += 1
+        for _l in lens:
+            row.append(Accuracy.objects.filter(time_range=time_range, length=_l, location=l, type=type).order_by('length__length')[0].value * 100)
 
         table.append(row)
 

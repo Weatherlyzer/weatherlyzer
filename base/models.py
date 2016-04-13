@@ -82,23 +82,47 @@ class TimeRange(models.Model):
 
         return None
 
-    def update(self):
-        for type in Type.objects.all():
-            for length in Length.objects.all():
-                for location in Location.objects.all():
-                    acc, created = Accuracy.objects.get_or_create(
-                        type=type,
-                        length=length,
-                        location=location,
-                        time_range=self,
-                    )
-                    acc.value = Accuracy.objects.filter(type=type, length=length, location=location,
-                                                        time_range__in=self.children.all())\
-                                                .aggregate(Avg('value'))['value__avg']
+    def update(self, include_parent=True):
+        if self.children.exists():
+            my_accuracies = Accuracy.objects.filter(time_range=self)
+            children_accuracies = Accuracy.objects.filter(time_range__in=self.children.all())
 
-                    acc.save()
+            accuracies = []
+            bulk_create = False
+            if not my_accuracies.exists():
+                bulk_create = True
 
-        if self.parent:
+            for type in Type.objects.all():
+                for length in Length.objects.all():
+                    for location in Location.objects.all():
+                        value = children_accuracies.filter(
+                            type=type,
+                            length=length,
+                            location=location,
+                        ).aggregate(Avg('value'))['value__avg']
+
+                        if bulk_create:
+                            accuracies.append(Accuracy(
+                                type=type,
+                                length=length,
+                                location=location,
+                                time_range=self,
+                                value=value,
+                            ))
+
+                        else:
+                            my_accuracies.update_or_create(
+                                type=type,
+                                length=length,
+                                location=location,
+                                time_range=self,  # because of creation
+                                defaults={'value': value},
+                            )
+
+            if bulk_create:
+                Accuracy.objects.bulk_create(accuracies)
+
+        if include_parent and self.parent:
             self.parent.update()
 
 
