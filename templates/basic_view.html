@@ -1,0 +1,31 @@
+
+{% if time_range.parent %}
+    parent: <a href="{% url "accuracy" time_range.parent.id type_id %}">{{ time_range.parent }}</a>
+{% endif %}
+<br>
+this: <a href="{% url "accuracy" time_range.id type_id %}">{{ time_range }}</a>
+<br>
+{% if time_range.children %}
+    children:
+    <ul>
+    {% for child in time_range.children.all %}
+        <li><a href="{% url "accuracy" child.id type_id %}">{{ child }}</a></li>
+    {% endfor %}
+    </ul>
+{% endif %}
+
+
+<table>
+    {% for row in table %}
+        <tr>
+        {% for item in row %}
+            <td>{{ item }}</td>
+        {% endfor %}
+
+        </tr>
+    {% endfor %}
+
+
+
+
+</table>

@@ -31,7 +31,7 @@ def get_accuracy(dist, dim):
     return accuracy
 
 
-def forecast_to_accuracy(datetime):
+def forecast_to_accuracy(datetime, update=True):
     forecasts = Forecast.objects.filter(forecasting=datetime)
 
     actual_values = forecasts.filter(forecasted_on=datetime)
@@ -55,4 +55,5 @@ def forecast_to_accuracy(datetime):
                 value=accuracy,
             )
 
-    time_range.parent.update()
+    if update:
+        time_range.parent.update()

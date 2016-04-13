@@ -26,6 +26,9 @@ class TimeRange(models.Model):
     start = models.DateTimeField()
     end = models.DateTimeField()
 
+    def __unicode__(self):
+        return "Time range: %s - %s" % (self.start, self.end)
+
     @classmethod
     def get_or_create(cls, start, end, parent_description):
         res = cls.objects.filter(start=start, end=end)
