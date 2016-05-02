@@ -160,7 +160,7 @@ class Statistics(models.Model):
     @classmethod
     def update_all(cls):
         for type in Type.objects.all():
-            stat = cls.objects.get_or_create(type=type)
+            stat, createdr = cls.objects.get_or_create(type=type)
             stat.update()
 
     def update(self):

@@ -2,7 +2,7 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 
 from base.forecast_to_accuracy import forecast_to_accuracy
-from base.models import Accuracy, TimeRange, Forecast
+from base.models import Accuracy, TimeRange, Forecast, Statistics
 
 
 class Command(BaseCommand):
@@ -20,6 +20,8 @@ class Command(BaseCommand):
         if not Forecast.objects.exists():
             self.stdout.write("no forecast, ending")
             return
+
+        Statistics.update_all()
 
         forecasts = Forecast.objects.order_by('forecasting')
         start_date = forecasts.first().forecasting
