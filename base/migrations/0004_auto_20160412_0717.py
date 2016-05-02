@@ -26,8 +26,6 @@ def create_locations(apps, schema_editor):
                             real_day -= 1
                             real_hour += 24
 
-
-
                         Forecast.objects.create(
                             forecasted_on=make_aware(datetime(2015, 6, real_day, real_hour), get_current_timezone()),
                             forecasting=make_aware(datetime(2015, 6, day, hour), get_current_timezone()),

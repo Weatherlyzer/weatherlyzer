@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from datetime import timedelta
+
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.aggregates import Avg, Max, Min
 
@@ -140,6 +142,19 @@ class Forecast(models.Model):
 
     def get_difference(self, other):
         return abs(self.value - other.value)
+
+    def is_valid(self):
+        def datetime_valid(d):
+            return d.microsecond == 0 and d.second == 0 and d.minute == 0 and d.hour % 3 == 0
+
+        return datetime_valid(self.forecasted_on) and datetime_valid(self.forecasting)
+
+    def save(self, *args, **kwargs):
+        print self.forecasted_on
+        if not self.is_valid():
+            raise ValidationError("Hours must be 0 mod 3")
+
+        super(Forecast, self).save(*args, **kwargs)
 
 
 class Accuracy(models.Model):
