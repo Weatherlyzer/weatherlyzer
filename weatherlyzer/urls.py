@@ -20,7 +20,5 @@ from base import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^$', views.index, name='home'),
-    url(r'^(?P<time_range_id>\d+)/$', views.accuracy),
-    url(r'^(?P<time_range_id>\d+)/(?P<type_id>\d+)/$', views.accuracy, name='accuracy'),
+    url(r'^$', views.index, name='index'),
 ]

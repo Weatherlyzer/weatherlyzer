@@ -1,37 +1,75 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from datetime import datetime, timedelta
+
+from django.shortcuts import render, get_object_or_404
 
 # Create your views here.
-from base.models import TimeRange, Type, Length, Location, Forecast, Accuracy
+from base.models import TimeRange, Type, Length, Location, Accuracy
+
+
+COLORS = ['#4A6491', '#E74C3C', '#5C832F']
 
 
 def index(request):
-    top_time_range = TimeRange.objects.get(parent=None)
-    first_type = Type.objects.first()
 
-    return redirect('accuracy', time_range_id=top_time_range.id, type_id=first_type.id)
+    req_year = int(request.GET.get('year', -1))
+    req_month = int(request.GET.get('month', -1))
+    req_day = int(request.GET.get('day', -1))
+    req_hour = int(request.GET.get('hour', -1))
+    req_type_id = request.GET.get('type')
+    req_locations_ids = request.GET.get('locations')
 
+    time_range_id = None
 
-def accuracy(request, time_range_id, type_id=None):
-    if not type_id:
-        type_id = Type.objects.first().id  # but better do avg or so...
+    # get time range
+    time_ranges = TimeRange.objects.all()
+    if req_year > 0:
+        start_datetime = datetime(
+            req_year,
+            req_month if req_month > 0 else 1,
+            req_day if req_day > 0 else 1,
+            req_hour if req_hour >= 0 else 0)
+        if req_hour >= 0:
+            range_delta = timedelta(hours=3)
+        elif req_day > 0:
+            range_delta = timedelta(days=1)
+        elif req_month > 0:
+            range_delta = timedelta(months=1)
+        else:
+            range_delta = timedelta(year=1)
+        end_datetime = start_datetime + range_delta
+        time_range = time_ranges.get(start=start_datetime, end=end_datetime)
+    else:
+        time_range = time_ranges.get(parent=None)  # top range
 
-    time_range = get_object_or_404(TimeRange, id=time_range_id)
-    type = get_object_or_404(Type, id=type_id)
+    # get forecast type
+    types = Type.objects.all()
+    if req_type_id:
+        type = get_object_or_404(Type, id=req_type_id)
+    else:
+        type = types.order_by('?').first()
 
+    # get locations
+    locations = Location.objects.order_by('name')
+    if req_locations_ids:
+        req_locations = []
+        for id in req_locations_ids:
+            location = get_object_or_404(Location, id=id)
+            req_locations.append(location)
+    else:
+        req_locations = locations
+
+    # collect values for graph
     table = []
-    table.append([])
-    table[0].append('x')
     lens = Length.objects.order_by('length').all()
-    for l in lens:
-        table[0].append(l.length)
-
-    for l in Location.objects.all():
+    for i, location in enumerate(req_locations):
         row = []
-        row.append(l.name)
         for _l in lens:
-            row.append(Accuracy.objects.filter(time_range=time_range, length=_l, location=l, type=type).order_by('length__length')[0].value * 100)
+            row.append(
+                Accuracy.objects.filter(
+                    time_range=time_range, length=_l, location=location,
+                    type=type
+                ).order_by('length__length')[0].value * 100)
 
-        table.append(row)
+        table.append((location.name, COLORS[i], row))
 
     return render(request, "basic_view.html", locals())
-
