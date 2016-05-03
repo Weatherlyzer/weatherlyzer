@@ -150,7 +150,7 @@ class Forecast(models.Model):
         return datetime_valid(self.forecasted_on) and datetime_valid(self.forecasting)
 
     def save(self, *args, **kwargs):
-        print self.forecasted_on
+        print(self.forecasted_on)
         if not self.is_valid():
             raise ValidationError("Hours must be 0 mod 3")
 
