@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from django.shortcuts import render, get_object_or_404
 
@@ -16,9 +17,7 @@ def index(request):
     req_day = int(request.GET.get('day', -1))
     req_hour = int(request.GET.get('hour', -1))
     req_type_id = request.GET.get('type')
-    req_locations_ids = request.GET.get('locations')
-
-    time_range_id = None
+    req_locations_ids = request.GET.getlist('locations')
 
     # get time range
     time_ranges = TimeRange.objects.all()
@@ -29,13 +28,13 @@ def index(request):
             req_day if req_day > 0 else 1,
             req_hour if req_hour >= 0 else 0)
         if req_hour >= 0:
-            range_delta = timedelta(hours=3)
+            range_delta = relativedelta(hours=3)
         elif req_day > 0:
-            range_delta = timedelta(days=1)
+            range_delta = relativedelta(hours=24)
         elif req_month > 0:
-            range_delta = timedelta(months=1)
+            range_delta = relativedelta(months=1)
         else:
-            range_delta = timedelta(year=1)
+            range_delta = relativedelta(years=1)
         end_datetime = start_datetime + range_delta
         time_range = time_ranges.get(start=start_datetime, end=end_datetime)
     else:
