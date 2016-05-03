@@ -16,7 +16,7 @@ def index(request):
     req_day = int(request.GET.get('day', -1))
     req_hour = int(request.GET.get('hour', -1))
     req_type_id = request.GET.get('type')
-    req_locations_ids = request.GET.get('locations')
+    req_locations_ids = request.GET.getlist('locations')
 
     time_range_id = None
 
