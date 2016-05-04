@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import re
+import pytz
 from datetime import datetime
 
 import base.collector.owm
@@ -63,9 +64,11 @@ def verify(d):
 
 # use django models to save forecast dictionary
 def save(d,place):
+  prague = pytz.timezone('Europe/Prague')
+
   l = place
-  r = reception_time = datetime.fromtimestamp(d['reception_time'])
-  p = prediction_time = datetime.fromtimestamp(d['prediction_time'])
+  r = reception_time = datetime.fromtimestamp(d['reception_time'],pytz.utc).astimezone(prague)
+  p = prediction_time = datetime.fromtimestamp(d['prediction_time'],pytz.utc).astimezone(prague)
 
   keys = [
     'temp',
