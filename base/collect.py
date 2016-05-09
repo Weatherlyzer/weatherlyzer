@@ -82,6 +82,6 @@ def save(d,place):
   for k in keys:
     if k in d:
       value_type = Type.objects.get_or_create(slug=k)[0]
-      Forecast.objects.create(location=l,forecasted_on=r,forecasting=p,value=d['temp'],type=value_type)
+      Forecast.objects.create(location=l,forecasted_on=r,forecasting=p,value=d[k],type=value_type)
 
 
