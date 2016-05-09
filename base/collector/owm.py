@@ -10,10 +10,13 @@ def get_forecasts(place):
 
   forecasts = [parse_weather(x,reception_time) for x in forecasts.get_weathers()]
 
+ # forecasts = owm.three_hours_forecast(place).get_forecast()
+
   return forecasts
 
-def parse_weather(w,reception_time):
-  c = {
+def parse_weather(weather_object,reception_time):
+  w = weather_object
+  parsed_weather = {
     'temp': w.get_temperature(unit='celsius')['temp'],
     'pressure': w.get_pressure()['press'],
     'reception_time': reception_time,
@@ -23,9 +26,9 @@ def parse_weather(w,reception_time):
   }
 
   if 'speed' in w.get_wind():
-    c['wind_speed'] = w.get_wind()['speed']
+    parsed_weather['wind_speed'] = w.get_wind()['speed']
 
   if '3h' in w.get_rain():
-    c['rain_3h'] = w.get_rain()['3h']
+    parsed_weather['rain_3h'] = w.get_rain()['3h']
 
-  return c
+  return parsed_weather
