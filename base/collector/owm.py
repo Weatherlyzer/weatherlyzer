@@ -3,16 +3,20 @@ import pyowm
 
 def get_forecasts(place):
   owm = pyowm.OWM("74878f953d3a8b89ee8e75ce4b5edd2a")
+  weather_list = []
 
+  # forecasts
   forecasts = owm.three_hours_forecast(place).get_forecast()
-
   reception_time = forecasts.get_reception_time()
+  weather_list = [parse_weather(x,reception_time) for x in forecasts.get_weathers()]
 
-  forecasts = [parse_weather(x,reception_time) for x in forecasts.get_weathers()]
-
- # forecasts = owm.three_hours_forecast(place).get_forecast()
-
-  return forecasts
+  # current weather
+  current = owm.weather_at_place(place)
+  reception_time = current.get_reception_time()
+  current = parse_weather(current.get_weather(),reception_time)
+  weather_list.append(current)
+  
+  return weather_list
 
 def parse_weather(weather_object,reception_time):
   w = weather_object
