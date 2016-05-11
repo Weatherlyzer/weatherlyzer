@@ -13,18 +13,18 @@ from base.models import Forecast, Type, Location
 # returns list of weather forecasts (dictionaries with specific keys)
 def get_forecasts(collector,places):
 
-  weather_list = []
+  forecasts = []
 
   for p in places:
-    weather_list.extend(collector.get_forecasts(place))
+    forecasts.extend(collector.get_forecasts(place))
 
-  for w in weather_list:
-    w['collector'] = x.__name__
+  for f in forecasts:
+    f['collector'] = x.__name__
 
-  for w in weather_list:
-    verify(w)
+  for f in forecasts:
+    verify(f)
   
-  return weather_list
+  return forecasts
 
 
 def collect():
@@ -38,37 +38,37 @@ def collect():
     # look through collectors
     for c in collectors:
 
-      # l is a list of forecasts stored in a form of dictionary
-      l = c.get_forecasts(place.name)
+      # forecasts is a list of forecasts stored in a form of dictionary
+      forecasts = c.get_forecasts(place.name)
 
       # add collector's name to every forecast
-      for d in l:
-        d['collector'] = c.__name__
+      for f in forecasts:
+        f['collector'] = c.__name__
 
       # verify and save every forecast
-      for forecast in l:
-        verify(forecast)
-        save(forecast,place)
+      for f in forecasts:
+        verify(f)
+        save(f,place)
 
   print("done")
 
 
 # verify that values in a (forecast) dictionary only contain allowed characters
-def verify(d):
+def verify(forecast):
   pattern = "^[a-zA-Z0-9\-\.\,:\+\ ]+$"
   checker = re.compile(pattern)
 
-  for k in d:
-    if not bool(checker.match(str(d[k]))):
-      raise ValidationError(d['collector'] + " contains invalid data: " + str(d[k]))
+  for k in forecast:
+    if not bool(checker.match(str(forecast[k]))):
+      raise ValidationError(forecast['collector'] + " contains invalid data: " + str(forecast[k]))
 
 # use django models to save forecast dictionary
-def save(d,place):
+def save(forecast,place):
   prague = pytz.timezone('Europe/Prague')
 
   l = place
-  r = reception_time = datetime.fromtimestamp(d['reception_time'],pytz.utc).astimezone(prague)
-  p = prediction_time = datetime.fromtimestamp(d['prediction_time'],pytz.utc).astimezone(prague)
+  r = reception_time = datetime.fromtimestamp(forecast['reception_time'],pytz.utc).astimezone(prague)
+  p = prediction_time = datetime.fromtimestamp(forecast['prediction_time'],pytz.utc).astimezone(prague)
 
   keys = [
     'temp',
@@ -80,8 +80,8 @@ def save(d,place):
   ]
 
   for k in keys:
-    if k in d:
+    if k in forecast:
       value_type = Type.objects.get_or_create(slug=k)[0]
-      Forecast.objects.create(location=l,forecasted_on=r,forecasting=p,value=d[k],type=value_type)
+      Forecast.objects.create(location=l,forecasted_on=r,forecasting=p,value=forecast[k],type=value_type)
 
 
