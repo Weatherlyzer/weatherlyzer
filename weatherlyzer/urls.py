@@ -21,4 +21,8 @@ from base import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', views.index, name='index'),
+    url(r'^graph$', views.graph_data),
+    url(r'^months$', views.available_months),
+    url(r'^days$', views.available_days),
+    url(r'^hours$', views.available_hours),
 ]
