@@ -17,6 +17,32 @@ def index(request):
     return render(request, "view.html", locals())
 
 
+def _available_forecasts():
+    forecasts_db = Type.objects.order_by('name')
+    forecasts = [{'id': forecast.id, 'name': forecast.name,
+                  'default': forecast.name == DEFAULT_FORECAST_TYPE}
+                 for forecast in forecasts_db]
+    return forecasts
+
+
+def _available_locations():
+    locations_db = Location.objects.order_by('name')
+    locations = [{'id': location.id, 'name': location.name}
+                 for location in locations_db]
+    return locations
+
+
+def _available_years():
+    time_range = _time_range()
+    years = [child.start.year for child in time_range.children.all()]
+    return years
+
+
+def weatherlyzer_js(request):
+    print(render(request, "weatherlyzer.js"))
+    return render(request, "weatherlyzer.js")
+
+
 def graph_data(request):
     req_year = _minus_one_is_none(int(request.POST.get('year')))
     req_month = _minus_one_is_none(int(request.POST.get('month')))
@@ -53,27 +79,6 @@ def graph_data(request):
 
 def _minus_one_is_none(number):
     return None if number == -1 else number
-
-
-def _available_forecasts():
-    forecasts_db = Type.objects.order_by('name')
-    forecasts = [{'id': forecast.id, 'name': forecast.name,
-                  'default': forecast.name == DEFAULT_FORECAST_TYPE}
-                 for forecast in forecasts_db]
-    return forecasts
-
-
-def _available_locations():
-    locations_db = Location.objects.order_by('name')
-    locations = [{'id': location.id, 'name': location.name}
-                 for location in locations_db]
-    return locations
-
-
-def _available_years():
-    time_range = _time_range()
-    years = [child.start.year for child in time_range.children.all()]
-    return years
 
 
 def _available_deltas():
