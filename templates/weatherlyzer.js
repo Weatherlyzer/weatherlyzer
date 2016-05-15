@@ -31,7 +31,7 @@ $(document).ready(function () {
             borderColor: item.color,
             pointBorderColor: item.color,
             pointBackgroundColor: '#fff',
-            data: item.data
+            data: item.accuracies
           });
         });
       }

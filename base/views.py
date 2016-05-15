@@ -1,7 +1,6 @@
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 
-# Create your views here.
 from base.models import TimeRange, Type, Length, Location, Accuracy
 
 
@@ -13,8 +12,8 @@ def index(request):
     types = _available_forecasts()
     locations = _available_locations()
     years = _available_years()
-
-    return render(request, "view.html", locals())
+    return render(request, "view.html",
+                  {'types': types, 'locations': locations, 'years': years})
 
 
 def _available_forecasts():
@@ -39,7 +38,6 @@ def _available_years():
 
 
 def weatherlyzer_js(request):
-    print(render(request, "weatherlyzer.js"))
     return render(request, "weatherlyzer.js")
 
 
@@ -51,28 +49,22 @@ def graph_data(request):
     req_type_id = request.POST.get('type')
     req_locations_ids = request.POST.getlist('locations[]')
 
+    lens = Length.objects.order_by('length').all()
+    req_locations = Location.objects.filter(id__in=req_locations_ids)
     time_range = _time_range(req_year, req_month, req_day, req_hour)
-    type = get_object_or_404(Type, id=req_type_id)
-    req_locations = []
-    for id in req_locations_ids:
-        location = get_object_or_404(Location, id=id)
-        req_locations.append(location)
+    type = Type.objects.get(id=req_type_id)
 
     table = []
-    lens = Length.objects.order_by('length').all()
     for i, location in enumerate(req_locations):
-        row = []
-        for _l in lens:
-            row.append(
-                Accuracy.objects.filter(
-                    time_range=time_range, length=_l, location=location,
-                    type=type
-                ).order_by('length__length')[0].value * 100)
-
+        accuracies = [
+            Accuracy.objects.get(time_range=time_range, length=len,
+                                 location=location, type=type).value * 100
+            for len in lens
+        ]
         table.append({'label': location.name, 'color': COLORS[i],
-                      'data': list(reversed(row))})
+                      'accuracies': list(reversed(accuracies))})
 
-    deltas = ['-{}'.format(delta) for delta in reversed(_available_deltas())]
+    deltas = ['-{}'.format(len.length) for len in lens]
 
     return JsonResponse({'table': table, 'deltas': deltas})
 
@@ -81,26 +73,24 @@ def _minus_one_is_none(number):
     return None if number == -1 else number
 
 
-def _available_deltas():
-    lens_db = Length.objects.order_by('length').all()
-    deltas = [len.length for len in lens_db]
-    return deltas
-
-
 def available_months(request):
     req_year = int(request.POST.get('year'))
+
     time_range = _time_range(req_year)
     months = [{'id': child.start.month, 'name': child.start.strftime('%B')}
               for child in time_range.children.all()]
+
     return JsonResponse({'months': months})
 
 
 def available_days(request):
     req_year = int(request.POST.get('year'))
     req_month = int(request.POST.get('month'))
+
     time_range = _time_range(req_year, req_month)
     days = [{'id': child.start.day, 'name': child.start.day}
             for child in time_range.children.all()]
+
     return JsonResponse({'days': days})
 
 
@@ -108,14 +98,18 @@ def available_hours(request):
     req_year = int(request.POST.get('year'))
     req_month = int(request.POST.get('month'))
     req_day = int(request.POST.get('day'))
+
     time_range = _time_range(req_year, req_month, req_day)
     hours = [{'id': child.start.hour,
               'name': '{}.00 - {}.00'.format(child.start.hour, child.end.hour)}
              for child in time_range.children.all()]
+
     return JsonResponse({'hours': hours})
 
 
 def _time_range(year=None, month=None, day=None, hour=None):
+    """Recursively find TimeRange starting on given moment"""
+
     time_ranges = TimeRange.objects.all()
     top_time_range = time_ranges.get(parent=None)
 
