@@ -1,74 +1,148 @@
-from datetime import datetime
-from dateutil.relativedelta import relativedelta
+from django.http import JsonResponse
+from django.shortcuts import render
 
-from django.shortcuts import render, get_object_or_404
-
-# Create your views here.
 from base.models import TimeRange, Type, Length, Location, Accuracy
 
 
 COLORS = ['#4A6491', '#E74C3C', '#5C832F']
+DEFAULT_FORECAST_TYPE = 'Temperature'
 
 
 def index(request):
+    types = _available_forecasts()
+    locations = _available_locations()
+    years = _available_years()
+    return render(request, "view.html",
+                  {'types': types, 'locations': locations, 'years': years})
 
-    req_year = int(request.GET.get('year', -1))
-    req_month = int(request.GET.get('month', -1))
-    req_day = int(request.GET.get('day', -1))
-    req_hour = int(request.GET.get('hour', -1))
-    req_type_id = request.GET.get('type')
-    req_locations_ids = request.GET.getlist('locations')
 
-    # get time range
-    time_ranges = TimeRange.objects.all()
-    if req_year > 0:
-        start_datetime = datetime(
-            req_year,
-            req_month if req_month > 0 else 1,
-            req_day if req_day > 0 else 1,
-            req_hour if req_hour >= 0 else 0)
-        if req_hour >= 0:
-            range_delta = relativedelta(hours=3)
-        elif req_day > 0:
-            range_delta = relativedelta(hours=24)
-        elif req_month > 0:
-            range_delta = relativedelta(months=1)
-        else:
-            range_delta = relativedelta(years=1)
-        end_datetime = start_datetime + range_delta
-        time_range = time_ranges.get(start=start_datetime, end=end_datetime)
-    else:
-        time_range = time_ranges.get(parent=None)  # top range
+def _available_forecasts():
+    forecasts_db = Type.objects.order_by('name')
+    forecasts = [{'id': forecast.id, 'name': forecast.name,
+                  'default': forecast.name == DEFAULT_FORECAST_TYPE}
+                 for forecast in forecasts_db]
+    return forecasts
 
-    # get forecast type
-    types = Type.objects.all()
-    if req_type_id:
-        type = get_object_or_404(Type, id=req_type_id)
-    else:
-        type = types.order_by('?').first()
 
-    # get locations
-    locations = Location.objects.order_by('name')
-    if req_locations_ids:
-        req_locations = []
-        for id in req_locations_ids:
-            location = get_object_or_404(Location, id=id)
-            req_locations.append(location)
-    else:
-        req_locations = locations
+def _available_locations():
+    locations_db = Location.objects.order_by('name')
+    locations = [{'id': location.id, 'name': location.name}
+                 for location in locations_db]
+    return locations
 
-    # collect values for graph
-    table = []
+
+def _available_years():
+    time_range = _time_range()
+    years = [child.start.year for child in time_range.children.all()]
+    return years
+
+
+def weatherlyzer_js(request):
+    return render(request, "weatherlyzer.js")
+
+
+def graph_data(request):
+    req_year = _minus_one_is_none(int(request.POST.get('year')))
+    req_month = _minus_one_is_none(int(request.POST.get('month')))
+    req_day = _minus_one_is_none(int(request.POST.get('day')))
+    req_hour = _minus_one_is_none(int(request.POST.get('hour')))
+    req_type_id = request.POST.get('type')
+    req_locations_ids = request.POST.getlist('locations[]')
+
     lens = Length.objects.order_by('length').all()
+    req_locations = Location.objects.filter(id__in=req_locations_ids)
+    time_range = _time_range(req_year, req_month, req_day, req_hour)
+    type = Type.objects.get(id=req_type_id)
+
+    table = []
     for i, location in enumerate(req_locations):
-        row = []
-        for _l in lens:
-            row.append(
-                Accuracy.objects.filter(
-                    time_range=time_range, length=_l, location=location,
-                    type=type
-                ).order_by('length__length')[0].value * 100)
+        accuracies = [
+            Accuracy.objects.get(time_range=time_range, length=len,
+                                 location=location, type=type).value * 100
+            for len in lens
+        ]
+        table.append({'label': location.name, 'color': COLORS[i],
+                      'accuracies': list(reversed(accuracies))})
 
-        table.append((location.name, COLORS[i], row))
+    deltas = ['-{}'.format(len.length) for len in lens]
 
-    return render(request, "basic_view.html", locals())
+    return JsonResponse({'table': table, 'deltas': deltas})
+
+
+def _minus_one_is_none(number):
+    return None if number == -1 else number
+
+
+def available_months(request):
+    req_year = int(request.POST.get('year'))
+
+    time_range = _time_range(req_year)
+    months = [{'id': child.start.month, 'name': child.start.strftime('%B')}
+              for child in time_range.children.all()]
+
+    return JsonResponse({'months': months})
+
+
+def available_days(request):
+    req_year = int(request.POST.get('year'))
+    req_month = int(request.POST.get('month'))
+
+    time_range = _time_range(req_year, req_month)
+    days = [{'id': child.start.day, 'name': child.start.day}
+            for child in time_range.children.all()]
+
+    return JsonResponse({'days': days})
+
+
+def available_hours(request):
+    req_year = int(request.POST.get('year'))
+    req_month = int(request.POST.get('month'))
+    req_day = int(request.POST.get('day'))
+
+    time_range = _time_range(req_year, req_month, req_day)
+    hours = [{'id': child.start.hour,
+              'name': '{}.00 - {}.00'.format(child.start.hour, child.end.hour)}
+             for child in time_range.children.all()]
+
+    return JsonResponse({'hours': hours})
+
+
+def _time_range(year=None, month=None, day=None, hour=None):
+    """Recursively find TimeRange starting on given moment"""
+
+    time_ranges = TimeRange.objects.all()
+    top_time_range = time_ranges.get(parent=None)
+
+    if not year:
+        return top_time_range
+
+    year_time_range = next(
+        (time_range for time_range in top_time_range.children.all()
+         if time_range.start.year == year),
+        None)
+
+    if not month:
+        return year_time_range
+
+    month_time_range = next(
+        (time_range for time_range in year_time_range.children.all()
+         if time_range.start.month == month),
+        None)
+
+    if not day:
+        return month_time_range
+
+    day_time_range = next(
+        (time_range for time_range in month_time_range.children.all()
+         if time_range.start.day == day),
+        None)
+
+    if not hour:
+        return day_time_range
+
+    hour_time_range = next(
+        (time_range for time_range in day_time_range.children.all()
+         if time_range.start.hour == hour),
+        None)
+
+    return hour_time_range

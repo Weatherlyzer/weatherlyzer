@@ -21,4 +21,9 @@ from base import views
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^$', views.index, name='index'),
+    url(r'^graph$', views.graph_data, name='graph'),
+    url(r'^months$', views.available_months, name='months'),
+    url(r'^days$', views.available_days, name='days'),
+    url(r'^hours$', views.available_hours, name='hours'),
+    url(r'^weatherlyzer.js$', views.weatherlyzer_js, name='weatherlyzer_js'),
 ]
