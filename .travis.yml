@@ -11,8 +11,8 @@ install:
   - pip install Django==$DJANGO_VERSION
   - pip install -r requirements.txt --use-mirrors
 script:
-  - ./manage.py reset_accuracies
   - ./manage.py migrate
+  - ./manage.py reset_accuracies
   - ./manage.py runserver &
   - TESTPID=$!
   - sleep 100
