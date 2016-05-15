@@ -1,0 +1,19 @@
+language: python
+python:
+  - 2.6
+  - 2.7
+  - 3.2
+  - 3.3
+  - 3.4
+env:
+  - DJANGO_VERSION=1.8.11
+install:
+  - pip install --use-mirrors Django==$DJANGO_VERSION
+  - pip install -r requirements.txt --use-mirrors
+script:
+  - ./manage.py reset_accuracies
+  - ./manage.py migrate
+  - ./manage.py runserver &
+  - TESTPID=$!
+  - sleep 100
+  - kill -2 $TESTPID
