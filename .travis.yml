@@ -1,0 +1,17 @@
+language: python
+python:
+  - 2.7
+  - 3.4
+env:
+  - DJANGO_VERSION=1.8.11
+install:
+  - pip install Django==$DJANGO_VERSION
+  - pip install -r requirements.txt
+script:
+  - ./manage.py pep8
+  - ./manage.py migrate
+  - ./manage.py reset_accuracies
+  - ./manage.py runserver &
+  - TESTPID=$!
+  - sleep 100
+  - kill -2 $TESTPID
