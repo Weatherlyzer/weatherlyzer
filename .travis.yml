@@ -6,8 +6,9 @@ env:
   - DJANGO_VERSION=1.8.11
 install:
   - pip install Django==$DJANGO_VERSION
-  - pip install -r requirements.txt --use-mirrors
+  - pip install -r requirements.txt
 script:
+  - ./manage.py pep8
   - ./manage.py migrate
   - ./manage.py reset_accuracies
   - ./manage.py runserver &
