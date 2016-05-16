@@ -7,24 +7,7 @@ from datetime import datetime
 import base.collector.owm
 
 from django.core.exceptions import ValidationError
-from base.models import Forecast, Type, Location
-
-
-# get_forecasts from specified collector and places
-# returns list of weather forecasts (dictionaries with specific keys)
-def get_forecasts(collector, places):
-    forecasts = []
-
-    for p in places:
-        forecasts.extend(collector.get_forecasts(place))
-
-    for f in forecasts:
-        f['collector'] = x.__name__
-
-    for f in forecasts:
-        verify(f)
-
-    return forecasts
+from base.models import Forecast, Type, Location, Length
 
 
 def collect():
@@ -66,20 +49,35 @@ def verify(forecast):
 def save(forecast, place):
     prague = pytz.timezone('Europe/Prague')
 
-    l = place
-    r = reception_time = datetime.fromtimestamp(forecast['reception_time'], pytz.utc).astimezone(prague)
-    p = prediction_time = datetime.fromtimestamp(forecast['prediction_time'], pytz.utc).astimezone(prague)
+    reception_time = datetime.fromtimestamp(forecast['reception_time'], pytz.utc).astimezone(prague)
+    prediction_time = datetime.fromtimestamp(forecast['prediction_time'], pytz.utc).astimezone(prague)
 
-    keys = [
-        'temp',
-        'pressure',
-        'clouds',
-        'humidity',
-        'speed',
-        'rain_3h',
-    ]
+    # times are normalized to be properly recognized by other modules
+    # due to how weatherlyzer is run, this should not be a problem
+    reception_time = reception_time.replace(minute=0,second=0,microsecond=0)
+    prediction_time = prediction_time.replace(minute=0,second=0,microsecond=0)
 
-    for k in keys:
-        if k in forecast:
-            value_type = Type.objects.get_or_create(slug=k)[0]
-            Forecast.objects.create(location=l, forecasted_on=r, forecasting=p, value=forecast[k], type=value_type)
+    # at the moment, only particular forecasts are used.
+    if prediction_time != reception_time and reception_time.hour % 3 != 0:
+        print("discarding forecast: future forecast's reception time: ", reception_time.hour, "%3 != 0")
+        return
+
+    # at the moment, only predictions for particular offsets are used.
+    difference = prediction_time - reception_time
+    difference_hours = difference.seconds // 60 // 60
+    allowed_deltas = [x.length for x in Length.objects.all()]
+
+    if difference_hours not in allowed_deltas:
+        print("discarding forecast:",difference_hours, "not in", allowed_deltas)
+        return
+
+    # all type 'slugs' are saved if they are found in the forecast
+    for value_type in Type.objects.all():
+        if value_type.slug in forecast:
+            Forecast.objects.create(
+                location=place,
+                forecasted_on=reception_time, 
+                forecasting=prediction_time,
+                value=forecast[value_type.slug],
+                type=value_type
+            )

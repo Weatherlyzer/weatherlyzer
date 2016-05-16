@@ -14,6 +14,7 @@ def get_forecasts(place):
   current = owm.weather_at_place(place)
   reception_time = current.get_reception_time()
   current = parse_weather(current.get_weather(),reception_time)
+  current['reception_time'] = current['prediction_time']
   weather_list.append(current)
   
   return weather_list
