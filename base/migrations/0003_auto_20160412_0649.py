@@ -48,7 +48,7 @@ def create_types(apps, schema_editor):
 
     Type.objects.create(
         name="Precipitation",
-        slug="precipitation",
+        slug="rain_3h",
     )
 
 
