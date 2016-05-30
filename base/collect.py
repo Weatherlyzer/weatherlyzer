@@ -49,8 +49,8 @@ def verify(forecast):
 def save(forecast, place):
     prague = pytz.timezone('Europe/Prague')
 
-    reception_time = datetime.fromtimestamp(forecast['reception_time'], pytz.utc).astimezone(prague)
-    prediction_time = datetime.fromtimestamp(forecast['prediction_time'], pytz.utc).astimezone(prague)
+    reception_time = datetime.fromtimestamp(forecast['reception_time'], pytz.utc)
+    prediction_time = datetime.fromtimestamp(forecast['prediction_time'], pytz.utc)
 
     # times are normalized to be properly recognized by other modules
     # due to how weatherlyzer is run, this should not be a problem
@@ -58,17 +58,17 @@ def save(forecast, place):
     prediction_time = prediction_time.replace(minute=0,second=0,microsecond=0)
 
     # at the moment, only particular forecasts are used.
-    if prediction_time != reception_time and reception_time.hour % 3 != 0:
-        print("discarding forecast: future forecast's reception time: ", reception_time.hour, "%3 != 0")
+    if reception_time.hour % 3 != 0:
+        print("discarding",str(prediction_time),str(reception_time), reception_time.hour, " %3 != 0")
         return
 
     # at the moment, only predictions for particular offsets are used.
     difference = prediction_time - reception_time
-    difference_hours = difference.seconds // 60 // 60
+    difference_hours = difference.total_seconds() // 60 // 60
     allowed_deltas = [x.length for x in Length.objects.all()]
 
     if difference_hours not in allowed_deltas:
-        print("discarding forecast:",difference_hours, "not in", allowed_deltas)
+        print("discarding",str(prediction_time), str(reception_time),":",difference_hours, "not in", allowed_deltas)
         return
 
     # all type 'slugs' are saved if they are found in the forecast
